@@ -1,12 +1,13 @@
-#include <assert.h>
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <getopt.h>
 
 #include "gattlib.h"
 
 // serial service
-uuid_t g_serial_uuid = CREATE_UUID16(0xFFE1);
+uuid_t g_serial_uuid; // 0xFFE1
 
 gatt_connection_t* connection;
 
@@ -44,16 +45,35 @@ void ctrlc_handler(int dummy) {
 }
 
 static void usage(char *argv[]) {
-	printf("%s <device_address>\n", argv[0]);
+	printf("%s -d <device_address> -c <characteristic>\n", argv[0]);
 }
 
+char baddr[16] = {0};
 int main(int argc, char *argv[]) {
 	int ret;
 
-	if (argc != 2) {
-		usage(argv);
-		return 1;
-	}
+    int op,u,test = 0;
+    while ((op = getopt(argc, argv, "d:c:")) != -1) {
+        switch (op) {
+            case 'd':
+                strcpy(baddr, optarg);
+                test |= 0x01;
+            break;
+            case 'c':
+                gattlib_string_to_uuid(optarg, strlen(optarg)+1, &g_serial_uuid);
+                test |= 0x02;
+            break;
+            default:
+                usage(argv);
+                exit(1);
+            break;
+        }
+    }
+
+    if (test != 3) {
+        usage(argv);
+        exit(1);
+    }
 
 	connection = gattlib_connect(NULL, argv[1], BDADDR_LE_PUBLIC, BT_SEC_LOW, 0, 0);
 	if (connection == NULL) {
