@@ -48,7 +48,8 @@ static void usage(char *argv[]) {
 	printf("%s -d <device_address> -c <characteristic>\n", argv[0]);
 }
 
-char baddr[16] = {0};
+char baddr[18];
+char cuuid[50];
 int main(int argc, char *argv[]) {
 	int ret;
 
@@ -56,10 +57,11 @@ int main(int argc, char *argv[]) {
     while ((op = getopt(argc, argv, "d:c:")) != -1) {
         switch (op) {
             case 'd':
-                strcpy(baddr, optarg);
+                strncpy(baddr, optarg, 18);
                 test |= 0x01;
             break;
             case 'c':
+                strcpy(cuuid, optarg);
                 gattlib_string_to_uuid(optarg, strlen(optarg)+1, &g_serial_uuid);
                 test |= 0x02;
             break;
@@ -75,14 +77,17 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-	connection = gattlib_connect(NULL, argv[1], BDADDR_LE_PUBLIC, BT_SEC_LOW, 0, 0);
+    printf("Attempting to connect to %s\n", baddr);
+	connection = gattlib_connect(NULL, baddr, BDADDR_LE_PUBLIC, BT_SEC_LOW, 0, 0);
 	if (connection == NULL) {
 		fprintf(stderr, "Fail to connect to the bluetooth device.\n");
 		return 1;
 	}
 
+    printf("Registering notification handler\n");
 	gattlib_register_notification(connection, notification_handler, NULL);
 
+    printf("Notification start on characteristic: %s\n", cuuid);
 	ret = gattlib_notification_start(connection, &g_serial_uuid);
 	if (ret) {
 		fprintf(stderr, "Fail to start notification\n.");
@@ -97,6 +102,7 @@ int main(int argc, char *argv[]) {
     g_io_add_watch(io, G_IO_IN, stdin_callback, NULL);
     g_io_channel_unref(io);
 
+    printf("Ready\n");
 	GMainLoop *loop = g_main_loop_new(NULL, 0);
 	g_main_loop_run(loop);
 
