@@ -19,5 +19,5 @@ git clone git@github.com:tiger12506/bleuart.git
 cd bleuart
 make
 bluetoothctl
-./uart 00:15:83:10:EA:BE
+./bleuart 00:15:83:10:EA:BE
 ```
